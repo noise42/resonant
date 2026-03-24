@@ -18,7 +18,6 @@ const cfgSmoothing = document.getElementById('cfg-smoothing');
 const cfgAttack = document.getElementById('cfg-attack');
 const cfgRelease = document.getElementById('cfg-release');
 const cfgThreshold = document.getElementById('cfg-threshold');
-const cfgOffset = document.getElementById('cfg-offset');
 
 let audioCtx, analyser, dataArray, smoothedArray;
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -66,7 +65,6 @@ function loadConfigToUI() {
   cfgAttack.value = AppConfig.alphaAttack;
   cfgRelease.value = AppConfig.alphaRelease;
   cfgThreshold.value = AppConfig.peakThresholdBase;
-  cfgOffset.value = AppConfig.offsetY;
 }
 settingsBtn.addEventListener('click', () => {
   loadConfigToUI();
@@ -86,48 +84,6 @@ cfgSmoothing.addEventListener('input', (e) => {
 cfgAttack.addEventListener('input', (e) => AppConfig.alphaAttack = parseFloat(e.target.value));
 cfgRelease.addEventListener('input', (e) => AppConfig.alphaRelease = parseFloat(e.target.value));
 cfgThreshold.addEventListener('input', (e) => AppConfig.peakThresholdBase = parseFloat(e.target.value));
-cfgOffset.addEventListener('input', (e) => AppConfig.offsetY = parseFloat(e.target.value));
-
-// Touch / Drag Panning Logic
-let isDragging = false;
-let lastY = 0;
-
-function handleDragStart(yPos) {
-  isDragging = true;
-  lastY = yPos;
-}
-
-function handleDragMove(yPos) {
-  if (!isDragging) return;
-  const deltaY = yPos - lastY;
-  AppConfig.offsetY += deltaY; // Move offset
-  lastY = yPos;
-  // Visually update settings slider if settings is open
-  if (!settingsOverlay.classList.contains('hidden')) {
-    cfgOffset.value = AppConfig.offsetY;
-  }
-}
-
-function handleDragEnd() {
-  isDragging = false;
-}
-
-// Mouse events
-canvas.addEventListener('mousedown', (e) => handleDragStart(e.clientY));
-window.addEventListener('mousemove', (e) => handleDragMove(e.clientY));
-window.addEventListener('mouseup', handleDragEnd);
-
-// Touch events for mobile
-canvas.addEventListener('touchstart', (e) => {
-  e.preventDefault(); 
-  handleDragStart(e.touches[0].clientY);
-}, { passive: false });
-canvas.addEventListener('touchmove', (e) => {
-  e.preventDefault();
-  handleDragMove(e.touches[0].clientY);
-}, { passive: false });
-canvas.addEventListener('touchend', handleDragEnd);
-
 
 // Audio Init
 startBtn.addEventListener('click', async () => {
@@ -198,7 +154,6 @@ function draw() {
   const maxLog = Math.log10(AppConfig.MAX_FREQ);
   const logRange = maxLog - minLog;
   const zoom = AppConfig.zoom;
-  const offsetY = AppConfig.offsetY;
   
   const gradInstant = ctx.createLinearGradient(0, height, 0, 0);
   gradInstant.addColorStop(0, 'rgba(139, 92, 246, 0.0)');
@@ -219,7 +174,7 @@ function draw() {
     amplitude = Math.max(0, Math.min(1, amplitude));
     
     const x = ((Math.log10(freq) - minLog) / logRange) * width;
-    const y = height - (amplitude * height * zoom) + offsetY;
+    const y = height - (amplitude * height * zoom);
     ctx.lineTo(x, y);
   }
   ctx.lineTo(width, height);
@@ -235,7 +190,7 @@ function draw() {
     if (freq < AppConfig.MIN_FREQ || freq > AppConfig.MAX_FREQ) continue;
     
     const x = ((Math.log10(freq) - minLog) / logRange) * width;
-    const y = height - (smoothedArray[i] * height * zoom) + offsetY;
+    const y = height - (smoothedArray[i] * height * zoom);
     
     points.push({x, y, freq, mag: smoothedArray[i], index: i});
     ctx.lineTo(x, y);
@@ -312,7 +267,7 @@ function draw() {
     li.style.borderLeftColor = themeColor;
     li.style.color = themeColor;
     
-    li.innerHTML = `<span>${noteInfo.text}</span> <span style="font-weight:300; opacity:0.8; font-size: 0.8rem; color: white;">${Math.round(p.freq)} Hz</span>`;
+    li.innerHTML = `<span>${noteInfo.text}</span>`;
     listEl.appendChild(li);
   });
 
@@ -331,6 +286,6 @@ function draw() {
     ctx.moveTo(x, 0);
     ctx.lineTo(x, height);
     ctx.stroke();
-    ctx.fillText(refLabels[index], x, height - (10 * window.devicePixelRatio) + offsetY); // Make sure x-axis labels pan with the canvas offset so they don't break visually from the grid
+    ctx.fillText(refLabels[index], x, height - (10 * window.devicePixelRatio));
   });
 }

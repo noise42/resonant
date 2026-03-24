@@ -16,6 +16,5 @@ window.AppConfig = {
   maxPeaks: 8,                // Number of peaks tracked in Sidebar
 
   // Visualization State
-  zoom: 0.5,                  // Current Y-scaling multiplier
-  offsetY: 0                  // Current Y-panning (drag offset) in pixels
+  zoom: 0.5                   // Current Y-scaling multiplier
 };
