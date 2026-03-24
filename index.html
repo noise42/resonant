@@ -28,7 +28,13 @@
     <div class="glass-panel settings-panel text-panel">
       <h2>Scientific References</h2>
       <div class="text-content">
-        <p>The algorithms and normative thresholds for the acoustic measures (NHR, Harmonic Cleanliness, Richness) are derived from the following clinical literature:</p>
+        <p>This analyzer computationally models three core real-time algorithms to evaluate vocal quality:</p>
+        <ul style="color: var(--text-main); line-height: 1.6; margin-bottom: 1.5rem; padding-left: 1.5rem; font-size: 0.95rem;">
+          <li><strong style="color: var(--accent-primary);">Harmonic Cleanliness:</strong> Measures variance between detected upper harmonic peaks and mathematically perfect integer multiples of the fundamental frequency (F0). A stable, purely anchored pitch hits 100%.</li>
+          <li><strong style="color: var(--accent-primary);">NHR Ratio:</strong> Calculates the energetic ratio of chaotic spectral noise (breath, hoarseness, hiss) against pure harmonic resonance. An NHR ratio under 0.5 indicates a pristine, non-breathy phonation.</li>
+          <li><strong style="color: var(--accent-primary);">Harmonic Richness:</strong> A custom consonance algorithm that rewards the amplitude of overtones matching perfect musical intervals (Octaves=1.0, Fifths=0.9, Thirds=0.95). High percentages indicate a bright, "pingy" resonance often linked to the singer's formant.</li>
+        </ul>
+        <p>These algorithmic structures and their respective color-coded normative health thresholds correlate directly with the following clinical literature:</p>
         <ul class="refs-list">
           <li><strong>Yumoto, E., Sasaki, Y., & Okamura, H.</strong> — <em>Harmonics-to-noise ratio and psychophysical measurement of the degree of hoarseness</em> — Relevant for identifying pathological thresholds (HNR > 7.4 dB).</li>
           <li><strong>Boersma, P. (1993)</strong> — <em>Accurate short-term analysis of the fundamental frequency and the harmonics-to-noise ratio of a sampled sound</em> — Foundational method for HNR calculation in Praat.</li>
@@ -78,9 +84,7 @@
       <div class="canvas-container" id="canvas-wrapper">
         <canvas id="spectrum-canvas"></canvas>
         <div id="labels-container"></div>
-      </div>
-      <div id="harmonics-sidebar">
-        <div class="metrics-dashboard">
+        <div class="metrics-dashboard overlay-metrics">
           <div class="metric-card">
             <span class="metric-label">Cleanliness</span>
             <div class="metric-value">
@@ -100,7 +104,8 @@
             <div class="progress-bar-bg"><div id="richness-bar" class="progress-bar-fill"></div></div>
           </div>
         </div>
-
+      </div>
+      <div id="harmonics-sidebar">
         <h3>Detected Harmonics</h3>
         <ul id="harmonics-list"></ul>
       </div>
