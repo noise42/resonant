@@ -58,6 +58,7 @@ body {
   margin-bottom: 0.5rem;
   background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.2;
 }
@@ -254,6 +255,7 @@ canvas {
   width: 100%;
   gap: 0.5rem;
   overflow-y: auto;
+  min-height: 350px; /* Strictly pre-allocate space for 8 items to completely prevent canvas shifting */
 }
 
 .harmonic-item {
@@ -400,6 +402,8 @@ canvas {
     flex-wrap: wrap;
     justify-content: center;
     padding-bottom: 1rem;
+    min-height: 100px; /* Pre-allocate space for 2 rows of wrapped pills on mobile */
+    align-content: flex-start;
   }
   .harmonic-item {
     width: auto;

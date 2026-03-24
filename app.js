@@ -34,9 +34,33 @@ let smoothedNHR = 0;
 const cleanValEl = document.getElementById('cleanliness-val');
 const cleanBarEl = document.getElementById('cleanliness-bar');
 const nhrValEl = document.getElementById('nhr-val');
+const richValEl = document.getElementById('richness-val');
+const richBarEl = document.getElementById('richness-bar');
+
+function computeHarmonicRichness(peaks, f0) {
+  if (!f0 || peaks.length <= 1) return 0;
+  
+  const weights = { 2: 1.0, 3: 0.95, 4: 0.85, 5: 0.90, 6: 0.85, 7: 0.40, 8: 0.70 };
+  const maxPossibleScore = 5.65; // Sum of all weights to represent theoretically perfect overtones
+  let actualScore = 0;
+  
+  for (let i = 1; i < peaks.length; i++) {
+    const ratio = Math.round(peaks[i].freq / f0);
+    // Ignore harmonics beyond the 8th or unlisted integer multiples
+    if (ratio >= 2 && ratio <= 8 && weights[ratio]) {
+      // Must be tightly aligned to the integer multiple to qualify as that specific harmonic overlay
+      if (Math.abs(peaks[i].freq - (ratio * f0)) < (f0 / 3)) {
+        actualScore += peaks[i].mag * weights[ratio];
+      }
+    }
+  }
+  
+  const richnessScore = (actualScore / maxPossibleScore) * 100;
+  return Math.min(100, Math.max(0, richnessScore));
+}
 
 function calculateHarmonicCleanliness(peaks, f0) {
-  if (!f0 || peaks.length <= 1) return 0;
+  if (!f0 || peaks.length <= 1) return 100; // Pure sine wave is 100% clean
   let totalWeightedDeviation = 0;
   let totalMagnitude = 0;
 
@@ -264,7 +288,7 @@ function draw() {
   for (let i = 1; i < points.length - 1; i++) {
     if (points[i].mag > threshold &&
         points[i].mag > points[i-1].mag && 
-        points[i].mag > points[i+1].mag) {
+        points[i].mag >= points[i+1].mag) { // Accounts for flat peak plateaus
       peaks.push(points[i]);
     }
   }
@@ -286,6 +310,7 @@ function draw() {
   if (f0 && peaks.length > 0) {
     const cleanliness = calculateHarmonicCleanliness(displayPeaks, f0);
     const nhr = calculateNHRState(points, peaks); // Use ALL robust peaks for rigorous NHR 
+    const richness = computeHarmonicRichness(displayPeaks, f0);
     
     cleanValEl.textContent = cleanliness.toFixed(1);
     cleanBarEl.style.width = `${cleanliness}%`;
@@ -297,11 +322,20 @@ function draw() {
     if (nhr < 0.5) nhrValEl.style.color = '#22c55e';
     else if (nhr < 1.5) nhrValEl.style.color = '#eab308';
     else nhrValEl.style.color = '#ef4444';
+    
+    richValEl.textContent = richness.toFixed(1);
+    richBarEl.style.width = `${richness}%`;
+    // Richness color scale: >20% Green because overtones naturally decay radically in pure authentic voice
+    if (richness > 20) richBarEl.style.background = '#22c55e';
+    else if (richness > 5) richBarEl.style.background = '#eab308';
+    else richBarEl.style.background = '#ef4444';
   } else {
     cleanValEl.textContent = '--';
     cleanBarEl.style.width = '0%';
     nhrValEl.textContent = '--';
     nhrValEl.style.color = 'inherit';
+    richValEl.textContent = '--';
+    richBarEl.style.width = '0%';
   }
   
   // 5. Update UI labels
