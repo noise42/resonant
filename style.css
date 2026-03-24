@@ -100,7 +100,7 @@ button:active {
   height: 100%;
   padding: 2rem;
   opacity: 0;
-  transition: opacity 0.8s ease 0.2s; /* Delays fade in */
+  transition: opacity 0.8s ease 0.2s;
 }
 
 #app-container.visible {
@@ -110,7 +110,8 @@ button:active {
 header {
   margin-bottom: 1.5rem;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
 }
 
 header h1 {
@@ -128,8 +129,43 @@ header h1 {
   margin-top: 0.2rem;
 }
 
+.controls-area {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+input[type=range] {
+  accent-color: var(--accent-primary);
+  width: 120px;
+}
+
+.small-btn {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  margin: 0;
+}
+
+.small-btn:hover {
+  background: rgba(255,255,255,0.1);
+  transform: none;
+  box-shadow: none;
+}
+
 main {
   flex-grow: 1;
+  display: flex;
   position: relative;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -139,8 +175,9 @@ main {
 }
 
 .canvas-container {
-  position: absolute;
-  inset: 0;
+  flex: 1;
+  position: relative;
+  min-width: 0;
 }
 
 canvas {
@@ -158,14 +195,14 @@ canvas {
 .peak-label {
   position: absolute;
   background: rgba(10, 10, 10, 0.85);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.15);
   color: white;
   padding: 0.35rem 0.7rem;
   border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 600;
   transform: translate(-50%, -130%);
-  transition: left 0.1s ease-out, top 0.1s ease-out, opacity 0.2s ease;
+  transition: left 0.1s ease-out, top 0.1s ease-out, opacity 0.2s ease, border-color 0.2s, color 0.2s;
   box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
   white-space: nowrap;
   backdrop-filter: blur(8px);
@@ -175,10 +212,58 @@ canvas {
 .peak-label::after {
   content: '';
   position: absolute;
-  bottom: -5px;
+  bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-  border-width: 5px 5px 0;
+  border-width: 6px 6px 0;
   border-style: solid;
-  border-color: rgba(255,255,255,0.15) transparent transparent transparent;
+  /* border-color inherited via JS */
+}
+
+/* Sidebar styling */
+#harmonics-sidebar {
+  width: 250px;
+  background: rgba(0,0,0,0.3);
+  border-left: 1px solid var(--glass-border);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+#harmonics-sidebar.hidden {
+  width: 0;
+  padding: 0;
+  opacity: 0;
+  border-left: none;
+  overflow: hidden;
+}
+
+#harmonics-sidebar h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+#harmonics-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.harmonic-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-left: 4px solid white;
+  white-space: nowrap;
+  transition: all 0.2s ease;
 }
