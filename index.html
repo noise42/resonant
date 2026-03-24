@@ -23,6 +23,26 @@
     </div>
   </div>
 
+  <!-- Scientific References UI -->
+  <div id="refs-overlay" class="hidden">
+    <div class="glass-panel settings-panel text-panel">
+      <h2>Scientific References</h2>
+      <div class="text-content">
+        <p>The algorithms and normative thresholds for the acoustic measures (NHR, Harmonic Cleanliness, Richness) are derived from the following clinical literature:</p>
+        <ul class="refs-list">
+          <li><strong>Yumoto, E., Sasaki, Y., & Okamura, H.</strong> — <em>Harmonics-to-noise ratio and psychophysical measurement of the degree of hoarseness</em> — Relevant for identifying pathological thresholds (HNR > 7.4 dB).</li>
+          <li><strong>Boersma, P. (1993)</strong> — <em>Accurate short-term analysis of the fundamental frequency and the harmonics-to-noise ratio of a sampled sound</em> — Foundational method for HNR calculation in Praat.</li>
+          <li><strong>Brockmann-Bauser, M. et al.</strong> — Research on jitter/shimmer/NHR algorithms and influencing factors (SPL, voice usage).</li>
+          <li><strong>Marques de Medeiros, M. et al. (2006)</strong> — <em>Standardization of acoustic measures for normal voice patterns</em> — Direct source for normative values: jitter (0.49–0.62%) and HNR (~9.5–11 dB).</li>
+          <li><strong>Sederholm, E. et al. (1999)</strong> — <em>Acoustic analysis of the normal voice in nonsmoking adults</em> — Source for jitter threshold < 0.5% and healthy HNR at 95th percentile ~18 dB.</li>
+          <li><strong>de Araújo Pernambuco, L. et al.</strong> — <em>Noise-to-Harmonics Ratio as an Acoustic Measure of Voice Disorders in Boys</em> — Source for the 1.92 odds ratio for every 0.01 increase in NHR.</li>
+          <li><strong>Orlikoff, R.F. (2003)</strong> — <em>Harmonics-to-Noise Ratio: An Index of Vocal Aging</em> — Source for normal adult HNR ranges of 11–13 dB.</li>
+        </ul>
+      </div>
+      <button id="close-refs-btn" style="margin-top: 2rem; padding: 0.8rem 2.8rem;">Close</button>
+    </div>
+  </div>
+
   <!-- Settings Configuration UI -->
   <div id="settings-overlay" class="hidden">
     <div class="glass-panel settings-panel">
@@ -50,6 +70,7 @@
           <input type="range" id="zoom-slider" min="0.5" max="5.0" step="0.1" value="1.2">
         </div>
         <button id="toggle-sidebar" class="small-btn">Harmonics</button>
+        <button id="refs-btn" class="small-btn">📚 Refs</button>
         <button id="settings-btn" class="small-btn">⚙️ Settings</button>
       </div>
     </header>
@@ -61,18 +82,18 @@
       <div id="harmonics-sidebar">
         <div class="metrics-dashboard">
           <div class="metric-card">
-            <span class="metric-label">Harmonic Cleanliness</span>
+            <span class="metric-label">Cleanliness</span>
             <div class="metric-value">
               <span id="cleanliness-val" style="width: 45px; display:inline-block">--</span><span class="unit">%</span>
             </div>
             <div class="progress-bar-bg"><div id="cleanliness-bar" class="progress-bar-fill"></div></div>
           </div>
           <div class="metric-card">
-            <span class="metric-label">NHR (Noise/Harmonics)</span>
+            <span class="metric-label">NHR Ratio</span>
             <div class="metric-value" id="nhr-val">--</div>
           </div>
           <div class="metric-card">
-            <span class="metric-label">Harmonic Richness</span>
+            <span class="metric-label">Richness</span>
             <div class="metric-value">
               <span id="richness-val" style="width: 45px; display:inline-block">--</span><span class="unit">%</span>
             </div>

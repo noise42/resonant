@@ -9,6 +9,11 @@ const toggleSidebarBtn = document.getElementById('toggle-sidebar');
 const sidebar = document.getElementById('harmonics-sidebar');
 const listEl = document.getElementById('harmonics-list');
 
+// Refs DOM mapping
+const refsBtn = document.getElementById('refs-btn');
+const refsOverlay = document.getElementById('refs-overlay');
+const closeRefsBtn = document.getElementById('close-refs-btn');
+
 // Settings DOM mapping
 const settingsBtn = document.getElementById('settings-btn');
 const settingsOverlay = document.getElementById('settings-overlay');
@@ -139,6 +144,9 @@ toggleSidebarBtn.addEventListener('click', () => {
   setTimeout(resize, 350); 
 });
 
+refsBtn.addEventListener('click', () => refsOverlay.classList.remove('hidden'));
+closeRefsBtn.addEventListener('click', () => refsOverlay.classList.add('hidden'));
+
 // Settings Overlay Logic
 function loadConfigToUI() {
   cfgNoiseGate.value = AppConfig.minDecibels;
@@ -173,7 +181,14 @@ startBtn.addEventListener('click', async () => {
   resize();
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Disable aggressive mobile voice filters to preserve musical harmonics
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: {
+        echoCancellation: false,
+        autoGainControl: false,
+        noiseSuppression: false
+      }
+    });
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const source = audioCtx.createMediaStreamSource(stream);
     

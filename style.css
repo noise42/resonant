@@ -273,8 +273,8 @@ canvas {
   transition: all 0.2s ease;
 }
 
-/* Settings UI formatting */
-#settings-overlay {
+/* Overlay UI formatting */
+#settings-overlay, #refs-overlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -287,7 +287,7 @@ canvas {
   transition: opacity 0.3s ease;
 }
 
-#settings-overlay.hidden {
+#settings-overlay.hidden, #refs-overlay.hidden {
   opacity: 0;
   pointer-events: none;
 }
@@ -321,6 +321,35 @@ canvas {
 .settings-grid input[type="range"] {
   width: 100%;
   margin-top: 0.8rem;
+}
+
+.text-panel {
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.text-content p {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.refs-list {
+  text-align: left;
+  color: var(--text-main);
+  padding-left: 1.5rem;
+}
+
+.refs-list li {
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.refs-list li strong {
+  color: var(--accent-primary);
 }
 
 /* Metrics Dashboard */
