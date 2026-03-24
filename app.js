@@ -9,11 +9,18 @@ const toggleSidebarBtn = document.getElementById('toggle-sidebar');
 const sidebar = document.getElementById('harmonics-sidebar');
 const listEl = document.getElementById('harmonics-list');
 
-let audioCtx, analyser, dataArray, smoothedArray;
-const FFT_SIZE = 4096;
-const MAX_FREQ = 20000;
-const MIN_FREQ = 20;
+// Settings DOM mapping
+const settingsBtn = document.getElementById('settings-btn');
+const settingsOverlay = document.getElementById('settings-overlay');
+const closeSettingsBtn = document.getElementById('close-settings-btn');
+const cfgNoiseGate = document.getElementById('cfg-noise-gate');
+const cfgSmoothing = document.getElementById('cfg-smoothing');
+const cfgAttack = document.getElementById('cfg-attack');
+const cfgRelease = document.getElementById('cfg-release');
+const cfgThreshold = document.getElementById('cfg-threshold');
+const cfgOffset = document.getElementById('cfg-offset');
 
+let audioCtx, analyser, dataArray, smoothedArray;
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 function getNoteFromFreq(freq) {
@@ -43,12 +50,86 @@ function resize() {
 
 window.addEventListener('resize', resize);
 
+// Setup initial config hooks
+zoomSlider.value = AppConfig.zoom;
+zoomSlider.addEventListener('input', (e) => AppConfig.zoom = parseFloat(e.target.value));
+
 toggleSidebarBtn.addEventListener('click', () => {
   sidebar.classList.toggle('hidden');
-  // Need to resize canvas slightly after flex shift finishes to prevent squished drawing
   setTimeout(resize, 350); 
 });
 
+// Settings Overlay Logic
+function loadConfigToUI() {
+  cfgNoiseGate.value = AppConfig.minDecibels;
+  cfgSmoothing.value = AppConfig.smoothingTimeConstant;
+  cfgAttack.value = AppConfig.alphaAttack;
+  cfgRelease.value = AppConfig.alphaRelease;
+  cfgThreshold.value = AppConfig.peakThresholdBase;
+  cfgOffset.value = AppConfig.offsetY;
+}
+settingsBtn.addEventListener('click', () => {
+  loadConfigToUI();
+  settingsOverlay.classList.remove('hidden');
+});
+closeSettingsBtn.addEventListener('click', () => {
+  settingsOverlay.classList.add('hidden');
+});
+cfgNoiseGate.addEventListener('input', (e) => {
+  AppConfig.minDecibels = parseFloat(e.target.value);
+  if(analyser) analyser.minDecibels = AppConfig.minDecibels;
+});
+cfgSmoothing.addEventListener('input', (e) => {
+  AppConfig.smoothingTimeConstant = parseFloat(e.target.value);
+  if(analyser) analyser.smoothingTimeConstant = AppConfig.smoothingTimeConstant;
+});
+cfgAttack.addEventListener('input', (e) => AppConfig.alphaAttack = parseFloat(e.target.value));
+cfgRelease.addEventListener('input', (e) => AppConfig.alphaRelease = parseFloat(e.target.value));
+cfgThreshold.addEventListener('input', (e) => AppConfig.peakThresholdBase = parseFloat(e.target.value));
+cfgOffset.addEventListener('input', (e) => AppConfig.offsetY = parseFloat(e.target.value));
+
+// Touch / Drag Panning Logic
+let isDragging = false;
+let lastY = 0;
+
+function handleDragStart(yPos) {
+  isDragging = true;
+  lastY = yPos;
+}
+
+function handleDragMove(yPos) {
+  if (!isDragging) return;
+  const deltaY = yPos - lastY;
+  AppConfig.offsetY += deltaY; // Move offset
+  lastY = yPos;
+  // Visually update settings slider if settings is open
+  if (!settingsOverlay.classList.contains('hidden')) {
+    cfgOffset.value = AppConfig.offsetY;
+  }
+}
+
+function handleDragEnd() {
+  isDragging = false;
+}
+
+// Mouse events
+canvas.addEventListener('mousedown', (e) => handleDragStart(e.clientY));
+window.addEventListener('mousemove', (e) => handleDragMove(e.clientY));
+window.addEventListener('mouseup', handleDragEnd);
+
+// Touch events for mobile
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault(); 
+  handleDragStart(e.touches[0].clientY);
+}, { passive: false });
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  handleDragMove(e.touches[0].clientY);
+}, { passive: false });
+canvas.addEventListener('touchend', handleDragEnd);
+
+
+// Audio Init
 startBtn.addEventListener('click', async () => {
   overlay.classList.add('hidden');
   appContainer.classList.add('visible');
@@ -60,8 +141,9 @@ startBtn.addEventListener('click', async () => {
     const source = audioCtx.createMediaStreamSource(stream);
     
     analyser = audioCtx.createAnalyser();
-    analyser.fftSize = FFT_SIZE;
-    analyser.smoothingTimeConstant = 0.6; // Filters out raw flutter
+    analyser.fftSize = AppConfig.FFT_SIZE;
+    analyser.smoothingTimeConstant = AppConfig.smoothingTimeConstant;
+    analyser.minDecibels = AppConfig.minDecibels;
     
     source.connect(analyser);
     
@@ -69,8 +151,7 @@ startBtn.addEventListener('click', async () => {
     dataArray = new Float32Array(bufferLength);
     smoothedArray = new Float32Array(bufferLength);
     
-    // Initialize 8 DOM elements for peak labels
-    for(let i=0; i<8; i++) {
+    for(let i=0; i<AppConfig.maxPeaks; i++) {
        const el = document.createElement('div');
        el.className = 'peak-label';
        el.style.opacity = '0';
@@ -97,18 +178,15 @@ function draw() {
   
   ctx.clearRect(0, 0, width, height);
   
-  // Reduced attack ignores quick taps (transients); slower release holds sung notes better.
-  const alphaAttack = 0.15;
-  const alphaRelease = 0.02;
+  const alphaAttack = AppConfig.alphaAttack;
+  const alphaRelease = AppConfig.alphaRelease;
   const minDb = analyser.minDecibels;
   const maxDb = analyser.maxDecibels;
   
   for (let i = 0; i < binCount; i++) {
-    // Normalize dB values to a 0.0 - 1.0 linear amplitude
     let amplitude = (dataArray[i] - minDb) / (maxDb - minDb);
     amplitude = Math.max(0, Math.min(1, amplitude));
     
-    // Apply Peak Hold Smoothing
     if (amplitude > smoothedArray[i]) {
       smoothedArray[i] += alphaAttack * (amplitude - smoothedArray[i]);
     } else {
@@ -116,10 +194,11 @@ function draw() {
     }
   }
   
-  const minLog = Math.log10(MIN_FREQ);
-  const maxLog = Math.log10(MAX_FREQ);
+  const minLog = Math.log10(AppConfig.MIN_FREQ);
+  const maxLog = Math.log10(AppConfig.MAX_FREQ);
   const logRange = maxLog - minLog;
-  const zoom = parseFloat(zoomSlider.value);
+  const zoom = AppConfig.zoom;
+  const offsetY = AppConfig.offsetY;
   
   const gradInstant = ctx.createLinearGradient(0, height, 0, 0);
   gradInstant.addColorStop(0, 'rgba(139, 92, 246, 0.0)');
@@ -134,13 +213,13 @@ function draw() {
   ctx.moveTo(0, height);
   for (let i = 0; i < binCount; i++) {
     const freq = i * sampleRate / (2 * binCount);
-    if (freq < MIN_FREQ || freq > MAX_FREQ) continue;
+    if (freq < AppConfig.MIN_FREQ || freq > AppConfig.MAX_FREQ) continue;
     
     let amplitude = (dataArray[i] - minDb) / (maxDb - minDb);
     amplitude = Math.max(0, Math.min(1, amplitude));
     
     const x = ((Math.log10(freq) - minLog) / logRange) * width;
-    const y = height - (amplitude * height * zoom);
+    const y = height - (amplitude * height * zoom) + offsetY;
     ctx.lineTo(x, y);
   }
   ctx.lineTo(width, height);
@@ -153,10 +232,10 @@ function draw() {
   const points = [];
   for (let i = 0; i < binCount; i++) {
     const freq = i * sampleRate / (2 * binCount);
-    if (freq < MIN_FREQ || freq > MAX_FREQ) continue;
+    if (freq < AppConfig.MIN_FREQ || freq > AppConfig.MAX_FREQ) continue;
     
     const x = ((Math.log10(freq) - minLog) / logRange) * width;
-    const y = Math.max(0, height - (smoothedArray[i] * height * zoom));
+    const y = height - (smoothedArray[i] * height * zoom) + offsetY;
     
     points.push({x, y, freq, mag: smoothedArray[i], index: i});
     ctx.lineTo(x, y);
@@ -166,10 +245,9 @@ function draw() {
   ctx.lineJoin = 'round';
   ctx.stroke();
   
-  // 3. Peak Detection Logic (finding resonant harmonics)
+  // 3. Peak Detection Logic
   const peaks = [];
-  // Increased threshold ignores quiet breathing and background noise
-  const threshold = Math.max(0.15, Math.max(...smoothedArray) * 0.25);
+  const threshold = Math.max(AppConfig.peakThresholdBase, Math.max(...smoothedArray) * AppConfig.peakThresholdRelative);
   
   for (let i = 1; i < points.length - 1; i++) {
     if (points[i].mag > threshold &&
@@ -180,19 +258,16 @@ function draw() {
   }
   
   peaks.sort((a, b) => b.mag - a.mag);
-  const topPeaks = peaks.slice(0, 8); // We take more peaks now that we have a sidebar
+  const topPeaks = peaks.slice(0, AppConfig.maxPeaks);
   
-  // 4. Fundamental Frequency Logic
   let rootMidi = null;
   let displayPeaks = [];
   if (topPeaks.length > 0) {
-    // Sort peaks by frequency to find the fundamental (lowest harmonic)
     displayPeaks = [...topPeaks].sort((a, b) => a.freq - b.freq);
     rootMidi = getNoteFromFreq(displayPeaks[0].freq).midi;
   }
   
-  // 5. Update the DOM peak-labels on the Canvas
-  // To avoid DOM redraw stutters, we just iterate statically placed divs array
+  // 4. Update UI labels
   const labelEls = document.querySelectorAll('.peak-label');
   labelEls.forEach((el, i) => {
     if (i < topPeaks.length) {
@@ -201,16 +276,12 @@ function draw() {
       
       let labelText = noteInfo.text;
       if (labelText === "A4") labelText = "A4 (440Hz)";
-      
       const themeColor = getHarmonicColor(noteInfo.midi, rootMidi);
       
       el.textContent = labelText;
       el.style.color = themeColor;
       el.style.borderColor = themeColor;
       
-      // We must inject custom dynamic CSS for the pseudo-element triangle
-      // Since pseudo-elements can't be styled directly via inline-styles nicely without CSS variables
-      el.style.setProperty('--label-color', themeColor);
       let existingStyle = document.getElementById(`dynamic-style-${i}`);
       if (!existingStyle) {
         existingStyle = document.createElement('style');
@@ -224,13 +295,13 @@ function draw() {
       
       el.style.left = `${displayX}%`;
       el.style.top = `${displayY}%`;
-      el.style.opacity = '1';
+      // Don't show labels if they get dragged under the screen
+      el.style.opacity = (p.y > height) ? '0' : '1'; 
     } else {
       el.style.opacity = '0';
     }
   });
 
-  // 6. Update Sidebar
   listEl.innerHTML = '';
   displayPeaks.forEach(p => {
     const noteInfo = getNoteFromFreq(p.freq);
@@ -245,7 +316,6 @@ function draw() {
     listEl.appendChild(li);
   });
 
-  // 7. Draw Reference Grid
   ctx.fillStyle = 'rgba(255,255,255,0.2)';
   ctx.strokeStyle = 'rgba(255,255,255,0.05)';
   ctx.textAlign = 'center';
@@ -255,12 +325,12 @@ function draw() {
   const refLabels = ["C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"];
   
   refFrequencies.forEach((f, index) => {
-    if (f < MIN_FREQ || f > MAX_FREQ) return;
+    if (f < AppConfig.MIN_FREQ || f > AppConfig.MAX_FREQ) return;
     const x = ((Math.log10(f) - minLog) / logRange) * width;
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, height);
     ctx.stroke();
-    ctx.fillText(refLabels[index], x, height - (10 * window.devicePixelRatio));
+    ctx.fillText(refLabels[index], x, height - (10 * window.devicePixelRatio) + offsetY); // Make sure x-axis labels pan with the canvas offset so they don't break visually from the grid
   });
 }

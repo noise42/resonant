@@ -22,6 +22,22 @@
       </button>
     </div>
   </div>
+
+  <!-- Settings Configuration UI -->
+  <div id="settings-overlay" class="hidden">
+    <div class="glass-panel settings-panel">
+      <h2>App Configuration</h2>
+      <div class="settings-grid">
+        <label>Noise Gate Cutter (dB)<br><input type="range" id="cfg-noise-gate" min="-130" max="-30" step="5"></label>
+        <label>Browser Smoothing<br><input type="range" id="cfg-smoothing" min="0" max="0.95" step="0.05"></label>
+        <label>Peak Attack (Filter Taps)<br><input type="range" id="cfg-attack" min="0.01" max="1.0" step="0.01"></label>
+        <label>Peak Release (Note Hold)<br><input type="range" id="cfg-release" min="0.01" max="0.2" step="0.01"></label>
+        <label>Label Threshold<br><input type="range" id="cfg-threshold" min="0.0" max="0.5" step="0.05"></label>
+        <label>Y-Offset Panning<br><input type="range" id="cfg-offset" min="-1500" max="1500" step="10"></label>
+      </div>
+      <button id="close-settings-btn" style="margin-top: 1.5rem; padding: 0.8rem 2.8rem;">Save & Close</button>
+    </div>
+  </div>
   
   <div id="app-container" class="hidden">
     <header>
@@ -32,13 +48,14 @@
       <div class="controls-area">
         <div class="control-group">
           <label for="zoom-slider">Zoom:</label>
-          <input type="range" id="zoom-slider" min="0.5" max="4.0" step="0.1" value="1.2">
+          <input type="range" id="zoom-slider" min="0.5" max="5.0" step="0.1" value="1.2">
         </div>
-        <button id="toggle-sidebar" class="small-btn">Toggle Harmonics</button>
+        <button id="toggle-sidebar" class="small-btn">Harmonics</button>
+        <button id="settings-btn" class="small-btn">⚙️ Settings</button>
       </div>
     </header>
     <main>
-      <div class="canvas-container">
+      <div class="canvas-container" id="canvas-wrapper">
         <canvas id="spectrum-canvas"></canvas>
         <div id="labels-container"></div>
       </div>
@@ -49,6 +66,7 @@
     </main>
   </div>
 
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
