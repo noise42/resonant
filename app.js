@@ -61,7 +61,7 @@ startBtn.addEventListener('click', async () => {
     
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = FFT_SIZE;
-    analyser.smoothingTimeConstant = 0.0;
+    analyser.smoothingTimeConstant = 0.6; // Filters out raw flutter
     
     source.connect(analyser);
     
@@ -97,8 +97,9 @@ function draw() {
   
   ctx.clearRect(0, 0, width, height);
   
-  const alphaAttack = 0.6;
-  const alphaRelease = 0.04;
+  // Reduced attack ignores quick taps (transients); slower release holds sung notes better.
+  const alphaAttack = 0.15;
+  const alphaRelease = 0.02;
   const minDb = analyser.minDecibels;
   const maxDb = analyser.maxDecibels;
   
@@ -167,7 +168,8 @@ function draw() {
   
   // 3. Peak Detection Logic (finding resonant harmonics)
   const peaks = [];
-  const threshold = Math.max(0.08, Math.max(...smoothedArray) * 0.15);
+  // Increased threshold ignores quiet breathing and background noise
+  const threshold = Math.max(0.15, Math.max(...smoothedArray) * 0.25);
   
   for (let i = 1; i < points.length - 1; i++) {
     if (points[i].mag > threshold &&
