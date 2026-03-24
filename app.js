@@ -30,6 +30,63 @@ function getNoteFromFreq(freq) {
   return { text: `${note}${octave}`, midi };
 }
 
+let smoothedNHR = 0;
+const cleanValEl = document.getElementById('cleanliness-val');
+const cleanBarEl = document.getElementById('cleanliness-bar');
+const nhrValEl = document.getElementById('nhr-val');
+
+function calculateHarmonicCleanliness(peaks, f0) {
+  if (!f0 || peaks.length <= 1) return 0;
+  let totalWeightedDeviation = 0;
+  let totalMagnitude = 0;
+
+  for (let i = 1; i < peaks.length; i++) {
+    const peakFreq = peaks[i].freq;
+    const mag = peaks[i].mag;
+    
+    const ratio = peakFreq / f0;
+    const expectedMultiple = Math.max(1, Math.round(ratio)); 
+    const expectedFreq = expectedMultiple * f0;
+    const deviationHz = Math.abs(peakFreq - expectedFreq);
+    
+    const maxDeviation = f0 / 2;
+    let deviationScore = 1 - (deviationHz / maxDeviation);
+    deviationScore = Math.max(0, Math.min(1, deviationScore)); 
+    
+    totalWeightedDeviation += deviationScore * mag;
+    totalMagnitude += mag;
+  }
+  
+  if (totalMagnitude === 0) return 0;
+  return (totalWeightedDeviation / totalMagnitude) * 100;
+}
+
+function calculateNHRState(points, validPeaks) {
+  let harmonicEnergy = 0;
+  const coveredBins = new Set();
+  
+  // Extract energy correctly tracking multi-bin spectral bleed
+  validPeaks.forEach(p => {
+    for(let w = -2; w <= 2; w++) {
+      const idx = p.index + w;
+      if(idx >= 0 && idx < points.length && !coveredBins.has(idx)) {
+        harmonicEnergy += points[idx].mag;
+        coveredBins.add(idx);
+      }
+    }
+  });
+  
+  let totalEnergy = 0;
+  points.forEach(p => { totalEnergy += p.mag; });
+  
+  let noiseEnergy = Math.max(0, totalEnergy - harmonicEnergy);
+  let currentNHR = noiseEnergy / Math.max(0.0001, harmonicEnergy);
+  
+  const alpha = 0.33; // ~80ms window assuming 60fps
+  smoothedNHR = (alpha * currentNHR) + ((1 - alpha) * smoothedNHR);
+  return smoothedNHR;
+}
+
 function getHarmonicColor(midi, rootMidi) {
   if (rootMidi === null || midi === null) return 'white';
   let diff = (midi - rootMidi) % 12;
@@ -217,12 +274,37 @@ function draw() {
   
   let rootMidi = null;
   let displayPeaks = [];
+  let f0 = null;
+  
   if (topPeaks.length > 0) {
     displayPeaks = [...topPeaks].sort((a, b) => a.freq - b.freq);
-    rootMidi = getNoteFromFreq(displayPeaks[0].freq).midi;
+    f0 = displayPeaks[0].freq;
+    rootMidi = getNoteFromFreq(f0).midi;
   }
   
-  // 4. Update UI labels
+  // 4. Harmonic & Noise Analytics
+  if (f0 && peaks.length > 0) {
+    const cleanliness = calculateHarmonicCleanliness(displayPeaks, f0);
+    const nhr = calculateNHRState(points, peaks); // Use ALL robust peaks for rigorous NHR 
+    
+    cleanValEl.textContent = cleanliness.toFixed(1);
+    cleanBarEl.style.width = `${cleanliness}%`;
+    if (cleanliness > 85) cleanBarEl.style.background = '#22c55e';
+    else if (cleanliness > 60) cleanBarEl.style.background = '#eab308';
+    else cleanBarEl.style.background = '#ef4444';
+    
+    nhrValEl.textContent = nhr.toFixed(3);
+    if (nhr < 0.5) nhrValEl.style.color = '#22c55e';
+    else if (nhr < 1.5) nhrValEl.style.color = '#eab308';
+    else nhrValEl.style.color = '#ef4444';
+  } else {
+    cleanValEl.textContent = '--';
+    cleanBarEl.style.width = '0%';
+    nhrValEl.textContent = '--';
+    nhrValEl.style.color = 'inherit';
+  }
+  
+  // 5. Update UI labels
   const labelEls = document.querySelectorAll('.peak-label');
   labelEls.forEach((el, i) => {
     if (i < topPeaks.length) {
